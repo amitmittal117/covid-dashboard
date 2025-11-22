@@ -1,16 +1,74 @@
-# React + Vite
+# COVID-19 Interactive Dashboard
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A lightweight, interactive web application that visualizes daily COVID-19 case data for selected countries. Built with React, Vite, Ant Design, and Tailwind CSS, this dashboard provides real-time insights into the progression of the pandemic using data from the [disease.sh](https://disease.sh/) API.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Real-time Data**: Fetches live data for cases, recoveries, and deaths.
+- **Global & Country Views**: Switch between a global overview and specific country statistics.
+- **Interactive Charts**: Visualize historical trends with dynamic area charts (30 days, 90 days, 1 year, All time).
+- **Data Table**: Sortable and responsive table displaying detailed statistics for all countries.
+- **Modern UI**: Clean, responsive design using Ant Design components and Tailwind CSS styling.
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Frontend Framework**: [React](https://react.dev/)
+- **Build Tool**: [Vite](https://vitejs.dev/)
+- **UI Library**: [Ant Design](https://ant.design/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **Data Visualization**: [Recharts](https://recharts.org/)
+- **State Management & Data Fetching**: [TanStack Query (React Query)](https://tanstack.com/query/latest)
+- **HTTP Client**: [Axios](https://axios-http.com/)
+- **Icons**: [Lucide React](https://lucide.dev/)
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### Prerequisites
+
+- Node.js (v14 or higher)
+- npm or yarn
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/amitmittal117/covid-dashboard.git
+   cd covid-dashboard
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+4. Open your browser and visit `http://localhost:5173`.
+
+## Project Structure
+
+```
+src/
+├── components/
+│   ├── Dashboard/
+│   │   ├── ChartsContainer.jsx  # Historical data visualization
+│   │   ├── CountryFilter.jsx    # Country selection dropdown
+│   │   ├── Dashboard.jsx        # Main dashboard container
+│   │   ├── DataTable.jsx        # Detailed country statistics table
+│   │   └── StatsCards.jsx       # Key metrics summary cards
+│   └── Layout/
+│       └── MainLayout.jsx       # Application shell and layout
+├── services/
+│   └── api.js                   # API integration with disease.sh
+├── lib/
+│   └── utils.js                 # Utility functions
+├── App.jsx                      # Root component
+└── main.jsx                     # Entry point
+```
+
+## License
+
+This project is open source and available under the [MIT License](LICENSE).
