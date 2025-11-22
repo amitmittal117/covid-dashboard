@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react';
 import { Card, Spin, Empty, Typography, Radio } from 'antd';
 import {
-    AreaChart,
+    ComposedChart,
     Area,
+    Line,
     XAxis,
     YAxis,
     CartesianGrid,
@@ -32,23 +33,61 @@ const ChartsContainer = ({ country }) => {
             if (data.timeline) {
                 timeline = data.timeline;
             } else {
-                // Sometimes the API returns an array for countries, or structure might vary
-                // But usually for single country it returns { country:..., timeline: {...} }
-                // If data is null or message, handle it
                 return [];
             }
         }
 
-        // timeline structure: { cases: { date: val }, deaths: { date: val }, recovered: { date: val } }
-        // We need to transform it to [{ date, cases, deaths, recovered }]
-
         const dates = Object.keys(timeline.cases || {});
-        return dates.map((date) => ({
-            date: dayjs(date).format('MMM D'),
-            cases: timeline.cases[date],
-            deaths: timeline.deaths[date],
-            recovered: timeline.recovered[date],
-        }));
+        const sortedDates = dates.sort((a, b) => new Date(a) - new Date(b));
+
+        // Calculate daily new cases and Rt
+        const processedData = sortedDates.map((date, index) => {
+            const cases = timeline.cases[date];
+            const deaths = timeline.deaths[date];
+            const recovered = timeline.recovered[date];
+
+            // Calculate daily new cases
+            const prevCases = index > 0 ? timeline.cases[sortedDates[index - 1]] : cases;
+            const newCases = Math.max(0, cases - prevCases);
+
+            return {
+                dateStr: date,
+                date: dayjs(date).format('MMM D'),
+                cases,
+                deaths,
+                recovered,
+                newCases,
+            };
+        });
+
+        // Calculate 7-day moving average and Rt
+        return processedData.map((item, index, array) => {
+            // Need at least 7 days for moving average
+            if (index < 6) return { ...item, rt: null };
+
+            const getAvg = (idx) => {
+                const slice = array.slice(idx - 6, idx + 1);
+                const sum = slice.reduce((acc, curr) => acc + curr.newCases, 0);
+                return sum / 7;
+            };
+
+            const currentAvg = getAvg(index);
+            // Compare with 4 days ago (serial interval approx)
+            const prevAvgIndex = index - 4;
+
+            let rt = null;
+            if (prevAvgIndex >= 6) {
+                const prevAvg = getAvg(prevAvgIndex);
+                if (prevAvg > 0) {
+                    rt = currentAvg / prevAvg;
+                }
+            }
+
+            return {
+                ...item,
+                rt: rt ? parseFloat(rt.toFixed(2)) : null,
+            };
+        });
     }, [data, country]);
 
     if (isLoading) {
@@ -71,7 +110,7 @@ const ChartsContainer = ({ country }) => {
         <Card className="mt-6 shadow-sm">
             <div className="flex flex-col sm:flex-row justify-between items-center mb-6">
                 <Title level={4} style={{ margin: 0 }}>
-                    Spread Trends
+                    Spread Trends & Estimated Rt
                 </Title>
                 <Radio.Group
                     value={days}
@@ -87,7 +126,7 @@ const ChartsContainer = ({ country }) => {
 
             <div className="h-[400px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart
+                    <ComposedChart
                         data={chartData}
                         margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
                     >
@@ -96,47 +135,40 @@ const ChartsContainer = ({ country }) => {
                                 <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
                                 <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
                             </linearGradient>
-                            <linearGradient id="colorDeaths" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8} />
-                                <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-                            </linearGradient>
-                            <linearGradient id="colorRecovered" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#22c55e" stopOpacity={0.8} />
-                                <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
-                            </linearGradient>
                         </defs>
                         <XAxis dataKey="date" />
-                        <YAxis />
+                        <YAxis yAxisId="left" />
+                        <YAxis
+                            yAxisId="right"
+                            orientation="right"
+                            domain={[0, 5]}
+                            allowDataOverflow={true}
+                            label={{ value: 'Rt (Transmission Rate)', angle: -90, position: 'insideRight' }}
+                        />
                         <CartesianGrid strokeDasharray="3 3" vertical={false} />
                         <Tooltip
                             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                         />
                         <Legend />
                         <Area
+                            yAxisId="left"
                             type="monotone"
                             dataKey="cases"
                             stroke="#3b82f6"
                             fillOpacity={1}
                             fill="url(#colorCases)"
-                            name="Cases"
+                            name="Total Cases"
                         />
-                        <Area
+                        <Line
+                            yAxisId="right"
                             type="monotone"
-                            dataKey="recovered"
-                            stroke="#22c55e"
-                            fillOpacity={1}
-                            fill="url(#colorRecovered)"
-                            name="Recovered"
+                            dataKey="rt"
+                            stroke="#ff7300"
+                            strokeWidth={2}
+                            dot={false}
+                            name="Estimated Rt"
                         />
-                        <Area
-                            type="monotone"
-                            dataKey="deaths"
-                            stroke="#ef4444"
-                            fillOpacity={1}
-                            fill="url(#colorDeaths)"
-                            name="Deaths"
-                        />
-                    </AreaChart>
+                    </ComposedChart>
                 </ResponsiveContainer>
             </div>
         </Card>
